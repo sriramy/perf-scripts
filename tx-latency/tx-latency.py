@@ -20,18 +20,8 @@ sys.path.append(get_git_root() + '/util/lib/Perf/Trace')
 
 from perf_trace_context import *
 from Core import *
+from Util import *
 from functools import cmp_to_key
-
-NSECS_PER_SEC    = 1000000000
-
-def nsecs(secs, nsecs):
-    return secs * NSECS_PER_SEC + nsecs
-
-def nsecs_secs(nsecs):
-    return nsecs / NSECS_PER_SEC
-
-def nsecs_nsecs(nsecs):
-    return nsecs % NSECS_PER_SEC
 
 all_event_list = []; # insert all tracepoint event related with this script
 

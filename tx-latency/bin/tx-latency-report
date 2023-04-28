@@ -2,4 +2,4 @@
 # description: display a process of packet and processing time
 # args: [tx] [rx] [dev=] [debug]
 
-$PERF_EXEC_PATH/perf script -s netdev-times.py $@
+$PERF_EXEC_PATH/perf script -s tx-latency.py $@

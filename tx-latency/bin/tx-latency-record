@@ -1,0 +1,5 @@
+#!/bin/bash
+perf record -e kprobes:tpacket_destruct_skbp \
+            -e kprobes:dev_hard_start_xmitp  \
+            -e kprobes:dev_queue_xmitp       \
+            -a -g -T -o /tmp/perf.data $@

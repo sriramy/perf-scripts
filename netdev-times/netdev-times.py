@@ -10,25 +10,24 @@
 
 from __future__ import print_function
 
-import os
+import git
 import sys
 
-import git
+
+def get_git_root():
+	git_repo = git.Repo(None, search_parent_directories=True)
+	return git_repo.git.rev_parse("--show-toplevel")
+
+sys.path.append(get_git_root() + '/util/lib/Perf/Trace')
 
 from perf_trace_context import *
 from Core import *
 from Util import *
 from functools import cmp_to_key
 
-def get_git_root(path):
-        git_repo = git.Repo(path, search_parent_directories=True)
-        return git_repo.git.rev_parse("--show-toplevel")
-
-sys.path.append(get_git_root(".") + '/util/lib/Perf/Trace')
-
 all_event_list = []; # insert all tracepoint event related with this script
 irq_dic = {}; # key is cpu and value is a list which stacks irqs
-              # which raise NET_RX softirq
+	      # which raise NET_RX softirq
 net_rx_dic = {}; # key is cpu and value include time of NET_RX softirq-entry
 		 # and a list which stacks receive
 receive_hunk_list = []; # a list which include a sequence of receive events

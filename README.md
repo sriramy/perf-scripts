@@ -44,10 +44,15 @@ TX
 ## tx-latency
 ```
 cd tx-latency
-./bin/tx-latency -i <perf.data>
+./bin/tx-latency-report -i <perf.data>
 
          queue            xmit            free
      7.433254sec        0.008msec        0.731msec
      7.434754sec        0.006msec        0.519msec
      7.434814sec        0.027msec        0.561msec
 ```
+
+## task-analyzer
+```
+cd task-analyzer
+./bin/task-analyzer-report -i <perf.data>

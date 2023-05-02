@@ -1,0 +1,3 @@
+#!/bin/bash
+# description: analyze timings of tasks
+$PERF_EXEC_PATH/perf script -s task-analyzer.py -- "$@"

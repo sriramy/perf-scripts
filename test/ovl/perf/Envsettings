@@ -1,0 +1,10 @@
+XC_PATH=$HOME/xc/xcluster
+GIT_TOP=$(git rev-parse --show-toplevel)
+
+cd $XC_PATH
+. ./Envsettings
+export XCLUSTER_OVLPATH=$XC_PATH/ovl:$GIT_TOP/test/ovl
+eval $($XCLUSTER env | grep -E '^KERNELDIR|__kver')
+export PERF_EXEC_PATH=$KERNELDIR/$__kver/tools/perf/
+test -x $PERF_EXEC_PATH/perf || echo "Perf not built! Run ./perf.sh build"
+cd -

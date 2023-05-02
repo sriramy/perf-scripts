@@ -1,23 +1,26 @@
 # perf-scripts
 Some random perf scripts that I use
+**PERF_EXEC_PATH must be set if custom kernel is used.**
 
 ## Mount debugfs
 sudo mount -t debugfs -o mode=755 nodev /sys/kernel/debug
 
-## Using xcluster default kernel settings
-**PERF_EXEC_PATH must be set if custom kernel is used.**
+## Using xcluster tests
+It is *recommended* to setup `xcluster` in a
+[netns](https://github.com/Nordix/xcluster/blob/master/doc/netns.md)
+for these tests.
+
 ```
-cd $XCLUSTER_HOME
-. Envsettings
-eval $($XCLUSTER env | grep -E '^KERNELDIR|__kver')
-export PERF_EXEC_PATH=$KERNELDIR/$__kver/tools/perf/
-$PERF_EXEC_PATH/perf script -f -g python
+cd test/ovl/perf
+. ./Envsettings
+./perf.sh build
+./perf.sh test start
 ```
 
 ## netdev-times
 ```
 cd netdev-times
-./bin/netdev-times-report -i <perf.data>
+./bin/netdev-times-report -i /tmp/perf.data --kallsyms /tmp/kallsyms
 
 RX
 ==
@@ -44,7 +47,7 @@ TX
 ## tx-latency
 ```
 cd tx-latency
-./bin/tx-latency-report -i <perf.data>
+./bin/tx-latency-report -i /tmp/perf.data --kallsyms /tmp/kallsyms
 
          queue            xmit            free
      7.433254sec        0.008msec        0.731msec
@@ -55,4 +58,4 @@ cd tx-latency
 ## task-analyzer
 ```
 cd task-analyzer
-./bin/task-analyzer-report -i <perf.data>
+./bin/task-analyzer-report -i /tmp/perf.data --kallsyms /tmp/kallsyms

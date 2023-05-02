@@ -1,0 +1,68 @@
+#! /bin/sh
+
+. /etc/profile
+. /usr/lib/network-topology.sh
+
+create_macvlan() {
+	id=$1
+	net=net$id
+
+	ip link add $net link eth1 type macvlan mode private
+	ip addr add 192.168.10.$id/24 dev $net
+	ip link set $net up
+	nohup packet-tx-ring -i $net > /var/log/packet-tx-ring-$net.log 2>&1 &
+}
+
+start_traffic() {
+	net=net$1
+	nohup packet-tx-ring -i $net > /var/log/packet-tx-ring-$net.log -d 192.168.10.201 2>&1 &
+}
+
+vm() {
+	create_macvlan 1
+	create_macvlan 2
+	create_macvlan 3
+	create_macvlan 4
+	create_macvlan 5
+	create_macvlan 6
+	create_macvlan 7
+	create_macvlan 8
+	create_macvlan 9
+	create_macvlan 10
+	create_macvlan 11
+	create_macvlan 12
+	create_macvlan 13
+	create_macvlan 14
+
+	start_traffic 1
+	start_traffic 2
+	start_traffic 3
+	start_traffic 4
+	start_traffic 5
+	start_traffic 6
+	start_traffic 7
+	start_traffic 8
+	start_traffic 9
+	start_traffic 10
+	start_traffic 11
+	start_traffic 12
+	start_traffic 13
+	start_traffic 14
+}
+
+router() {
+	create_macvlan 201
+}
+
+tester() {
+	return 0
+}
+
+case $(hostname) in
+    vm-0*)
+        vm;;
+    vm-20*)
+        router;;
+    vm-22*)
+        tester;;
+esac

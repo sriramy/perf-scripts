@@ -1,0 +1,86 @@
+#! /bin/sh
+
+. /etc/profile
+. /usr/lib/network-topology.sh
+
+debugfs=/sys/kernel/debug
+tracer=function
+
+mount_tracefs() {
+	mount -t debugfs none $debugfs || true
+}
+
+setup_trace() {
+        cd $debugfs/tracing/
+
+        echo "" > set_ftrace_pid
+        echo $tracer > current_tracer
+
+        echo > set_ftrace_filter
+        echo packet_direct_xmit >> set_ftrace_filter
+        echo __dev_queue_xmit >> set_ftrace_filter
+        echo net_tx_action >> set_ftrace_filter
+        echo __qdisc_run >> set_ftrace_filter
+        echo pfifo_fast* >> set_ftrace_filter
+        echo netif_tx* >> set_ftrace_filter
+        echo sch_* >> set_ftrace_filter
+        echo dev_hard_start_xmit >> set_ftrace_filter
+        echo start_xmit >> set_ftrace_filter
+        echo tpacket_snd >> set_ftrace_filter
+	echo tpacket_destruct_skb >> set_ftrace_filter
+        echo packet_sendmsg  >> set_ftrace_filter
+        echo
+
+	echo > kprobe_events
+	echo 'p:packet_sendmsgp packet_sendmsg sock=%di' >> kprobe_events
+
+	echo 'p:dev_queue_xmitp __dev_queue_xmit skb=%di' >> kprobe_events
+	echo 'r:dev_queue_xmitr __dev_queue_xmit ret=$retval' >> kprobe_events
+
+	echo 'p:sch_direct_xmitp sch_direct_xmit skb=%di' >> kprobe_events
+	echo 'r:sch_direct_xmitr sch_direct_xmit ret=$retval' >> kprobe_events
+
+	echo 'p:dev_hard_start_xmitp dev_hard_start_xmit skb=%di' >> kprobe_events
+	echo 'r:dev_hard_start_xmitr dev_hard_start_xmit ret=$retval' >> kprobe_events
+
+	echo 'p:start_xmitp start_xmit skb=%di' >> kprobe_events
+	echo 'r:start_xmitr start_xmit ret=$retval' >> kprobe_events
+
+	echo 'p:tpacket_destruct_skbp tpacket_destruct_skb skb=%di' >> kprobe_events
+	echo 'r:tpacket_destruct_skbr tpacket_destruct_skb ret=$retval' >> kprobe_events
+
+	echo 1 > events/kprobes/enable
+}
+
+start_trace() {
+        echo 1 > $debugfs/tracing/tracing_on
+}
+
+stop_trace() {
+        echo 0 > $debugfs/tracing/tracing_on
+}
+
+vm() {
+	mount_tracefs
+	stop_trace
+	setup_trace
+        start_trace
+}
+
+router() {
+	mount_tracefs
+	stop_trace
+}
+
+tester() {
+	return 0
+}
+
+case $(hostname) in
+    vm-0*)
+        vm;;
+    vm-20*)
+        router;;
+    vm-22*)
+        tester;;
+esac

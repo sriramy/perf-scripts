@@ -1,0 +1,89 @@
+#! /bin/sh
+# NOTE: A common pattern is to specify "-" (stdout) as out-file,
+#  so there must be NO log printouts to stdout!
+
+dir=$(dirname $0); dir=$(readlink -f $dir)
+tmp=/tmp/$USER/xcluster_$$
+die() {
+	echo "ERROR: $*" >&2
+	rm -rf $tmp
+	exit 1
+}
+log() {
+	echo "INFO: $*" >&2
+}
+findf() {
+	f=$ARCHIVE/$1
+	test -r $f || f=$HOME/Downloads/$1
+	test -r $f
+}
+
+test -n "$1" || die "No out-file"
+
+mkdir -p $tmp
+cp -R $dir/default/* $tmp
+
+if findf ctraffic.gz; then
+	gzip -dc $f > $tmp/bin/ctraffic
+	chmod a+x $tmp/bin/ctraffic
+fi
+
+make -s -C $dir/src clean > /dev/null 2>&1
+make -s -C $dir/src -j$(nproc) BUILD=$tmp/bin > /dev/null 2>&1 || die make
+
+eval $($XCLUSTER env | grep -E '^KERNELDIR|__kver|__kobj')
+kdir=$KERNELDIR/$__kver
+
+# install kernel headers
+source=/lib/modules/$(echo $__kver | sed 's/linux\-//')/source
+mkdir -p $tmp/$source/include/linux
+mkdir -p $tmp/$source/include/generated
+mkdir -p $tmp/$source/arch/x86/include/uapi/asm
+mkdir -p $tmp/$source/include/uapi/linux
+mkdir -p $tmp/$source/include/uapi/asm-generic
+mkdir -p $tmp/$source/include/uapi/asm
+mkdir -p $tmp/$source/include/asm-generic
+mkdir -p $tmp/$source/include/asm
+cp $kdir/include/asm-generic/int-ll64.h $tmp/$source/include/asm-generic/int-ll64.h
+cp $kdir/include/asm-generic/bitsperlong.h $tmp/$source/include/asm-generic/bitsperlong.h
+cp $__kobj/include/generated/autoconf.h $tmp/$source/include/generated/autoconf.h
+cp $kdir/include/linux/types.h $tmp/$source/include/linux/types.h
+cp $kdir/include/linux/compiler_types.h $tmp/$source/include/linux/compiler_types.h
+cp $kdir/include/linux/compiler_attributes.h $tmp/$source/include/linux/compiler_attributes.h
+cp $kdir/include/linux/compiler-clang.h $tmp/$source/include/linux/compiler-clang.h
+cp $kdir/include/uapi/linux/bpf* $tmp/$source/include/uapi/linux/
+cp $kdir/include/uapi/linux/types.h $tmp/$source/include/uapi/linux/types.h
+cp $kdir/include/uapi/linux/posix_types.h $tmp/$source/include/uapi/linux/posix_types.h
+cp $kdir/include/uapi/linux/stddef.h $tmp/$source/include/uapi/linux/stddef.h
+cp $kdir/include/uapi/linux/posix_types.h $tmp/$source/include/uapi/linux/posix_types.h
+cp $kdir/include/uapi/asm-generic/int-ll64.h $tmp/$source/include/uapi/asm-generic/int-ll64.h
+cp $kdir/include/uapi/asm-generic/types.h $tmp/$source/include/uapi/asm-generic/types.h
+cp $kdir/include/uapi/asm-generic/posix_types.h $tmp/$source/include/uapi/asm-generic/posix_types.h
+cp $kdir/include/uapi/asm-generic/bitsperlong.h $tmp/$source/include/uapi/asm-generic/bitsperlong.h
+cp $__kobj/arch/x86/include/generated/uapi/asm/types.h $tmp/$source/arch/x86/include/uapi/asm/types.h
+cp $kdir/arch/x86/include/uapi/asm/posix_types.h $tmp/$source/arch/x86/include/uapi/asm/posix_types.h
+cp $kdir/arch/x86/include/uapi/asm/bitsperlong.h $tmp/$source/arch/x86/include/uapi/asm/bitsperlong.h
+cp -r $kdir/arch/x86/* $tmp/$source/arch/x86/
+cp $kdir/include/linux/kconfig.h $tmp/$source/include/linux/kconfig.h
+
+$XCLUSTER install_prog --dest=$tmp bpftrace nmap
+
+# install perf
+f=$kdir/tools/perf/perf
+test -x $f || die "Not executable [$f]"
+$XCLUSTER install_prog --dest=$tmp $f
+mkdir -p $tmp/root/scripts
+cp -r $kdir/tools/perf/scripts $tmp/root/
+
+# install perf-scripts
+perf_scripts=$GOPATH/src/github.com/sriramy/perf-scripts
+for n in netdev-times task-analyzer tx-latency; do
+	f=$perf_scripts/$n/bin/$n-record
+	test -x $f || die "Not executable [$f]"
+	cp $f $tmp/bin
+done
+
+cd $tmp
+tar cf "$1" *
+cd - > /dev/null
+rm -rf $tmp
